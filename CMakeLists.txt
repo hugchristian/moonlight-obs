@@ -70,3 +70,9 @@ install(TARGETS moonlight-obs
 install(DIRECTORY data/
     DESTINATION "${CMAKE_INSTALL_DATADIR}/obs/obs-plugins/moonlight-obs"
 )
+
+# Optional: Include tests
+option(BUILD_TESTS "Build tests" ON)
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif()

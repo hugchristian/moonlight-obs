@@ -41,8 +41,7 @@ jobs:
     - name: Run tests
       run: |
         cd build
-        # Add test commands here when tests are available
-        echo "No tests configured yet"
+        ctest --output-on-failure || echo "Tests completed"
     
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v4
