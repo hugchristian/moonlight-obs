@@ -1,0 +1,146 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: moonlight-obs.so
+            asset_name: moonlight-obs-linux-x64.so
+          - os: macos-latest
+            platform: macos
+            artifact_name: moonlight-obs.so
+            asset_name: moonlight-obs-macos-x64.so
+          - os: windows-latest
+            platform: windows
+            artifact_name: moonlight-obs.dll
+            asset_name: moonlight-obs-windows-x64.dll
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies (Linux)
+      if: matrix.platform == 'linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libobs-dev \
+          libavcodec-dev \
+          libavformat-dev \
+          libavutil-dev \
+          libswscale-dev
+    
+    - name: Install dependencies (macOS)
+      if: matrix.platform == 'macos'
+      run: |
+        brew install cmake
+        brew install ffmpeg
+        brew install --cask obs || echo "OBS not available via cask"
+      continue-on-error: true
+    
+    - name: Setup MSVC (Windows)
+      if: matrix.platform == 'windows'
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Configure CMake (Linux/macOS)
+      if: matrix.platform != 'windows'
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+      continue-on-error: true
+    
+    - name: Configure CMake (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022" -A x64
+      continue-on-error: true
+    
+    - name: Build (Linux/macOS)
+      if: matrix.platform != 'windows'
+      run: |
+        cd build
+        make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+      continue-on-error: true
+    
+    - name: Build (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        cd build
+        cmake --build . --config Release
+      continue-on-error: true
+    
+    - name: Package plugin (Linux/macOS)
+      if: matrix.platform != 'windows'
+      run: |
+        mkdir -p release/obs-plugins
+        mkdir -p release/data/obs-plugins/moonlight-obs
+        if [ -f "build/${{ matrix.artifact_name }}" ]; then
+          cp build/${{ matrix.artifact_name }} release/obs-plugins/
+          cp -r data/* release/data/obs-plugins/moonlight-obs/ 2>/dev/null || true
+          cd release
+          tar -czf ../${{ matrix.asset_name }}.tar.gz *
+        fi
+      continue-on-error: true
+    
+    - name: Package plugin (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        mkdir release\obs-plugins\64bit
+        mkdir release\data\obs-plugins\moonlight-obs
+        if (Test-Path "build\Release\${{ matrix.artifact_name }}") {
+          Copy-Item "build\Release\${{ matrix.artifact_name }}" "release\obs-plugins\64bit\"
+          if (Test-Path "data\*") {
+            Copy-Item "data\*" "release\data\obs-plugins\moonlight-obs\" -Recurse -Force
+          }
+          Compress-Archive -Path "release\*" -DestinationPath "${{ matrix.asset_name }}.zip"
+        }
+      continue-on-error: true
+    
+    - name: Upload Release Asset
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.platform }}-release
+        path: |
+          *.tar.gz
+          *.zip
+
+  create-release:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Display structure of downloaded files
+      run: ls -R artifacts
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: artifacts/**/*
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

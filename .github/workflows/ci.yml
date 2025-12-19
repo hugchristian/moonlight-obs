@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libobs-dev \
+          libavcodec-dev \
+          libavformat-dev \
+          libavutil-dev \
+          libswscale-dev
+    
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/usr
+    
+    - name: Build
+      run: |
+        cd build
+        make -j$(nproc)
+    
+    - name: Run tests
+      run: |
+        cd build
+        # Add test commands here when tests are available
+        echo "No tests configured yet"
+    
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: moonlight-obs-linux
+        path: build/*.so
+
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        brew install cmake
+        brew install ffmpeg
+        # OBS Studio needs to be installed from cask or built
+        brew install --cask obs || echo "OBS not available via cask, continuing..."
+    
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/Applications/OBS.app/Contents
+      continue-on-error: true
+    
+    - name: Build
+      run: |
+        cd build
+        make -j$(sysctl -n hw.ncpu)
+      continue-on-error: true
+    
+    - name: Upload macOS artifact
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: moonlight-obs-macos
+        path: build/*.so
+
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup MSVC
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022" -A x64
+      continue-on-error: true
+    
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config Release
+      continue-on-error: true
+    
+    - name: Upload Windows artifact
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: moonlight-obs-windows
+        path: build/Release/*.dll
