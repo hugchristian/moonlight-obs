@@ -1,5 +1,9 @@
 # Moonlight OBS Plugin
 
+[![CI](https://github.com/hugchristian/moonlight-obs/actions/workflows/ci.yml/badge.svg)](https://github.com/hugchristian/moonlight-obs/actions/workflows/ci.yml)
+[![Release](https://github.com/hugchristian/moonlight-obs/actions/workflows/release.yml/badge.svg)](https://github.com/hugchristian/moonlight-obs/actions/workflows/release.yml)
+[![Lint](https://github.com/hugchristian/moonlight-obs/actions/workflows/lint.yml/badge.svg)](https://github.com/hugchristian/moonlight-obs/actions/workflows/lint.yml)
+
 Receive NVIDIA GameStream and Sunshine video and audio streams directly in OBS Studio.
 
 ## Overview
@@ -20,6 +24,31 @@ This plugin adds a new source type to OBS Studio that allows you to receive vide
 - CMake 3.16 or later
 - FFmpeg libraries (avcodec, avformat, avutil, swscale)
 - A GameStream-enabled PC or Sunshine server
+
+## Installation
+
+### Pre-built Releases
+
+Download the latest release for your platform from the [Releases page](https://github.com/hugchristian/moonlight-obs/releases).
+
+**Linux**: Extract the `.tar.gz` file and copy the files to your OBS plugin directory:
+```bash
+tar -xzf moonlight-obs-linux-x64.so.tar.gz
+sudo cp obs-plugins/moonlight-obs.so /usr/lib/obs-plugins/
+sudo cp -r data/obs-plugins/moonlight-obs /usr/share/obs/obs-plugins/
+```
+
+**macOS**: Extract and copy to OBS.app:
+```bash
+tar -xzf moonlight-obs-macos-x64.so.tar.gz
+cp obs-plugins/moonlight-obs.so /Applications/OBS.app/Contents/PlugIns/
+cp -r data/obs-plugins/moonlight-obs /Applications/OBS.app/Contents/Resources/obs-plugins/
+```
+
+**Windows**: Extract the `.zip` file and copy to your OBS installation directory:
+```
+C:\Program Files\obs-studio\
+```
 
 ## Building
 
@@ -153,9 +182,21 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug
 make
 ```
 
+### CI/CD
+
+This project uses GitHub Actions for continuous integration and automated releases:
+
+- **CI Workflow**: Automatically builds and tests the plugin on Linux, macOS, and Windows for every push and pull request
+- **Release Workflow**: Automatically creates releases with platform-specific packages when a version tag is pushed
+- **Lint Workflow**: Checks code quality and style using clang-format and cppcheck
+
+For more information, see [.github/workflows/README.md](.github/workflows/README.md).
+
 ### Contributing
 
 Contributions are welcome! Please feel free to submit issues and pull requests.
+
+All pull requests are automatically built and tested on multiple platforms via GitHub Actions.
 
 ## License
 
