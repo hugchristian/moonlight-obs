@@ -39,6 +39,9 @@ struct audio_decoder *audio_decoder_create(struct moonlight_source *source)
 
 	codec_ctx->sample_rate = DEFAULT_SAMPLE_RATE;
 	codec_ctx->channels = DEFAULT_CHANNELS;
+	// Note: channel_layout is deprecated in FFmpeg 5.1+, but we use it for
+	// compatibility with older FFmpeg versions. For FFmpeg 5.1+, consider using:
+	// av_channel_layout_default(&codec_ctx->ch_layout, DEFAULT_CHANNELS);
 	codec_ctx->channel_layout = AV_CH_LAYOUT_STEREO;
 
 	// Open codec

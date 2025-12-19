@@ -39,6 +39,8 @@ struct video_decoder *video_decoder_create(struct moonlight_source *source)
 
 	codec_ctx->width = source->width;
 	codec_ctx->height = source->height;
+	// Using YUV420P as it's the standard output format for H.264 in GameStream
+	// In a production implementation, this could be detected from the stream
 	codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
 	// Open codec

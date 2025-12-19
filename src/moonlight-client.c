@@ -3,6 +3,7 @@
 #include "video-decoder.h"
 #include "audio-decoder.h"
 #include "plugin-main.h"
+#include <obs-module.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
@@ -66,7 +67,7 @@ static void *streaming_thread(void *arg)
 struct moonlight_client *moonlight_client_create(struct moonlight_source *source)
 {
 	struct moonlight_client *client =
-		calloc(1, sizeof(struct moonlight_client));
+		bzalloc(sizeof(struct moonlight_client));
 	if (!client)
 		return NULL;
 
@@ -75,9 +76,9 @@ struct moonlight_client *moonlight_client_create(struct moonlight_source *source
 	client->streaming = false;
 
 	// Allocate private data
-	struct client_priv *priv = calloc(1, sizeof(struct client_priv));
+	struct client_priv *priv = bzalloc(sizeof(struct client_priv));
 	if (!priv) {
-		free(client);
+		bfree(client);
 		return NULL;
 	}
 
@@ -105,13 +106,13 @@ void moonlight_client_destroy(struct moonlight_client *client)
 	if (client->priv) {
 		struct client_priv *priv = client->priv;
 		pthread_mutex_destroy(&priv->mutex);
-		free(priv);
+		bfree(priv);
 	}
 
 	// Free allocated strings
-	free(client->host);
-	free(client->app_name);
-	free(client);
+	bfree(client->host);
+	bfree(client->app_name);
+	bfree(client);
 }
 
 bool moonlight_client_start(struct moonlight_client *client, const char *host,
@@ -126,9 +127,9 @@ bool moonlight_client_start(struct moonlight_client *client, const char *host,
 	     app_name);
 
 	// Store connection parameters
-	client->host = strdup(host);
+	client->host = bstrdup(host);
 	client->port = port;
-	client->app_name = strdup(app_name);
+	client->app_name = bstrdup(app_name);
 
 	// Get stream parameters from source
 	struct moonlight_source *source = client->source;
@@ -141,8 +142,8 @@ bool moonlight_client_start(struct moonlight_client *client, const char *host,
 	priv->should_stop = false;
 	if (pthread_create(&priv->thread, NULL, streaming_thread, client) != 0) {
 		mlog(LOG_ERROR, "Failed to create streaming thread");
-		free(client->host);
-		free(client->app_name);
+		bfree(client->host);
+		bfree(client->app_name);
 		client->host = NULL;
 		client->app_name = NULL;
 		return false;
