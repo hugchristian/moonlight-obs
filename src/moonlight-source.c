@@ -66,7 +66,7 @@ static void *moonlight_source_create(obs_data_t *settings, obs_source_t *source)
 	// Initialize with settings
 	moonlight_source_update(context, settings);
 
-	blog(LOG_INFO, "Moonlight source created");
+	mlog(LOG_INFO, "Moonlight source created");
 	return context;
 }
 
@@ -77,7 +77,7 @@ static void moonlight_source_destroy(void *data)
 	if (!context)
 		return;
 
-	blog(LOG_INFO, "Destroying Moonlight source");
+	mlog(LOG_INFO, "Destroying Moonlight source");
 
 	// Stop streaming if active
 	if (context->streaming) {
@@ -155,7 +155,7 @@ static void moonlight_source_update(void *data, obs_data_t *settings)
 
 	pthread_mutex_unlock(&context->mutex);
 
-	blog(LOG_INFO, "Moonlight source updated: %s:%d (%dx%d@%dfps)",
+	mlog(LOG_INFO, "Moonlight source updated: %s:%d (%dx%d@%dfps)",
 	     host, port, width, height, fps);
 }
 
@@ -197,13 +197,13 @@ static void moonlight_source_show(void *data)
 {
 	struct moonlight_source *context = data;
 
-	blog(LOG_INFO, "Moonlight source shown - starting stream");
+	mlog(LOG_INFO, "Moonlight source shown - starting stream");
 
 	// Initialize client if needed
 	if (!context->client) {
 		context->client = moonlight_client_create(context);
 		if (!context->client) {
-			blog(LOG_ERROR, "Failed to create Moonlight client");
+			mlog(LOG_ERROR, "Failed to create Moonlight client");
 			return;
 		}
 	}
@@ -212,7 +212,7 @@ static void moonlight_source_show(void *data)
 	if (!context->video_dec) {
 		context->video_dec = video_decoder_create(context);
 		if (!context->video_dec) {
-			blog(LOG_ERROR, "Failed to create video decoder");
+			mlog(LOG_ERROR, "Failed to create video decoder");
 			return;
 		}
 	}
@@ -220,7 +220,7 @@ static void moonlight_source_show(void *data)
 	if (!context->audio_dec) {
 		context->audio_dec = audio_decoder_create(context);
 		if (!context->audio_dec) {
-			blog(LOG_ERROR, "Failed to create audio decoder");
+			mlog(LOG_ERROR, "Failed to create audio decoder");
 			return;
 		}
 	}
@@ -230,9 +230,9 @@ static void moonlight_source_show(void *data)
 				   context->port, context->app_name)) {
 		context->streaming = true;
 		context->connected = true;
-		blog(LOG_INFO, "Moonlight streaming started");
+		mlog(LOG_INFO, "Moonlight streaming started");
 	} else {
-		blog(LOG_ERROR, "Failed to start Moonlight streaming");
+		mlog(LOG_ERROR, "Failed to start Moonlight streaming");
 	}
 }
 
@@ -240,7 +240,7 @@ static void moonlight_source_hide(void *data)
 {
 	struct moonlight_source *context = data;
 
-	blog(LOG_INFO, "Moonlight source hidden - stopping stream");
+	mlog(LOG_INFO, "Moonlight source hidden - stopping stream");
 
 	if (context->streaming && context->client) {
 		moonlight_client_stop(context->client);

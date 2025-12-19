@@ -7,7 +7,7 @@ OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
 
 bool obs_module_load(void)
 {
-	blog(LOG_INFO, "Moonlight OBS Plugin loaded successfully (version %s)",
+	mlog(LOG_INFO, "Moonlight OBS Plugin loaded successfully (version %s)",
 	     PLUGIN_VERSION);
 
 	// Register the Moonlight source
@@ -18,7 +18,7 @@ bool obs_module_load(void)
 
 void obs_module_unload(void)
 {
-	blog(LOG_INFO, "Moonlight OBS Plugin unloaded");
+	mlog(LOG_INFO, "Moonlight OBS Plugin unloaded");
 }
 
 const char *obs_module_name(void)

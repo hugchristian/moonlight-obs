@@ -8,6 +8,7 @@
 // Default audio settings
 #define DEFAULT_SAMPLE_RATE 48000
 #define DEFAULT_CHANNELS 2
+#define AUDIO_BUFFER_SECONDS 2
 
 struct audio_decoder *audio_decoder_create(struct moonlight_source *source)
 {
@@ -23,7 +24,7 @@ struct audio_decoder *audio_decoder_create(struct moonlight_source *source)
 	// Find Opus decoder (commonly used in game streaming)
 	const AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_OPUS);
 	if (!codec) {
-		blog(LOG_ERROR, "Opus decoder not found");
+		mlog(LOG_ERROR, "Opus decoder not found");
 		bfree(decoder);
 		return NULL;
 	}
@@ -31,7 +32,7 @@ struct audio_decoder *audio_decoder_create(struct moonlight_source *source)
 	// Allocate codec context
 	AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
 	if (!codec_ctx) {
-		blog(LOG_ERROR, "Failed to allocate audio codec context");
+		mlog(LOG_ERROR, "Failed to allocate audio codec context");
 		bfree(decoder);
 		return NULL;
 	}
@@ -42,7 +43,7 @@ struct audio_decoder *audio_decoder_create(struct moonlight_source *source)
 
 	// Open codec
 	if (avcodec_open2(codec_ctx, codec, NULL) < 0) {
-		blog(LOG_ERROR, "Failed to open audio codec");
+		mlog(LOG_ERROR, "Failed to open audio codec");
 		avcodec_free_context(&codec_ctx);
 		bfree(decoder);
 		return NULL;
@@ -53,7 +54,7 @@ struct audio_decoder *audio_decoder_create(struct moonlight_source *source)
 	// Allocate frame
 	AVFrame *frame = av_frame_alloc();
 	if (!frame) {
-		blog(LOG_ERROR, "Failed to allocate audio frame");
+		mlog(LOG_ERROR, "Failed to allocate audio frame");
 		avcodec_free_context(&codec_ctx);
 		bfree(decoder);
 		return NULL;
@@ -63,10 +64,10 @@ struct audio_decoder *audio_decoder_create(struct moonlight_source *source)
 
 	// Allocate output buffer
 	decoder->output_size = DEFAULT_SAMPLE_RATE * DEFAULT_CHANNELS *
-			       sizeof(float) * 2; // 2 seconds buffer
+			       sizeof(float) * AUDIO_BUFFER_SECONDS;
 	decoder->output_data = bmalloc(decoder->output_size);
 
-	blog(LOG_INFO, "Audio decoder created (%d Hz, %d channels)",
+	mlog(LOG_INFO, "Audio decoder created (%d Hz, %d channels)",
 	     DEFAULT_SAMPLE_RATE, DEFAULT_CHANNELS);
 	return decoder;
 }
@@ -76,7 +77,7 @@ void audio_decoder_destroy(struct audio_decoder *decoder)
 	if (!decoder)
 		return;
 
-	blog(LOG_INFO, "Destroying audio decoder");
+	mlog(LOG_INFO, "Destroying audio decoder");
 
 	if (decoder->frame) {
 		av_frame_free((AVFrame **)&decoder->frame);
@@ -118,7 +119,7 @@ bool audio_decoder_decode(struct audio_decoder *decoder, uint8_t *data,
 	av_packet_free(&packet);
 
 	if (ret < 0) {
-		blog(LOG_ERROR, "Error sending audio packet to decoder: %d",
+		mlog(LOG_ERROR, "Error sending audio packet to decoder: %d",
 		     ret);
 		return false;
 	}
@@ -128,7 +129,7 @@ bool audio_decoder_decode(struct audio_decoder *decoder, uint8_t *data,
 	if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
 		return true; // Need more data
 	} else if (ret < 0) {
-		blog(LOG_ERROR, "Error receiving audio frame from decoder: %d",
+		mlog(LOG_ERROR, "Error receiving audio frame from decoder: %d",
 		     ret);
 		return false;
 	}

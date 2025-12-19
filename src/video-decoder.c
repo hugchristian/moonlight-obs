@@ -7,6 +7,9 @@
 #include <obs-module.h>
 #include <graphics/graphics.h>
 
+// RGBA format has 4 bytes per pixel
+#define BYTES_PER_PIXEL_RGBA 4
+
 struct video_decoder *video_decoder_create(struct moonlight_source *source)
 {
 	struct video_decoder *decoder =
@@ -21,7 +24,7 @@ struct video_decoder *video_decoder_create(struct moonlight_source *source)
 	// Find H.264 decoder
 	const AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_H264);
 	if (!codec) {
-		blog(LOG_ERROR, "H.264 decoder not found");
+		mlog(LOG_ERROR, "H.264 decoder not found");
 		bfree(decoder);
 		return NULL;
 	}
@@ -29,7 +32,7 @@ struct video_decoder *video_decoder_create(struct moonlight_source *source)
 	// Allocate codec context
 	AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
 	if (!codec_ctx) {
-		blog(LOG_ERROR, "Failed to allocate codec context");
+		mlog(LOG_ERROR, "Failed to allocate codec context");
 		bfree(decoder);
 		return NULL;
 	}
@@ -40,7 +43,7 @@ struct video_decoder *video_decoder_create(struct moonlight_source *source)
 
 	// Open codec
 	if (avcodec_open2(codec_ctx, codec, NULL) < 0) {
-		blog(LOG_ERROR, "Failed to open codec");
+		mlog(LOG_ERROR, "Failed to open codec");
 		avcodec_free_context(&codec_ctx);
 		bfree(decoder);
 		return NULL;
@@ -51,7 +54,7 @@ struct video_decoder *video_decoder_create(struct moonlight_source *source)
 	// Allocate frame
 	AVFrame *frame = av_frame_alloc();
 	if (!frame) {
-		blog(LOG_ERROR, "Failed to allocate frame");
+		mlog(LOG_ERROR, "Failed to allocate frame");
 		avcodec_free_context(&codec_ctx);
 		bfree(decoder);
 		return NULL;
@@ -60,11 +63,11 @@ struct video_decoder *video_decoder_create(struct moonlight_source *source)
 	decoder->frame = frame;
 
 	// Allocate output buffer for RGBA data
-	int output_size = source->width * source->height * 4;
+	int output_size = source->width * source->height * BYTES_PER_PIXEL_RGBA;
 	decoder->output_data = bmalloc(output_size);
-	decoder->output_linesize = source->width * 4;
+	decoder->output_linesize = source->width * BYTES_PER_PIXEL_RGBA;
 
-	blog(LOG_INFO, "Video decoder created (%dx%d)", source->width,
+	mlog(LOG_INFO, "Video decoder created (%dx%d)", source->width,
 	     source->height);
 	return decoder;
 }
@@ -74,7 +77,7 @@ void video_decoder_destroy(struct video_decoder *decoder)
 	if (!decoder)
 		return;
 
-	blog(LOG_INFO, "Destroying video decoder");
+	mlog(LOG_INFO, "Destroying video decoder");
 
 	if (decoder->sws_ctx) {
 		sws_freeContext(decoder->sws_ctx);
@@ -121,7 +124,7 @@ bool video_decoder_decode(struct video_decoder *decoder, uint8_t *data,
 	av_packet_free(&packet);
 
 	if (ret < 0) {
-		blog(LOG_ERROR, "Error sending packet to decoder: %d", ret);
+		mlog(LOG_ERROR, "Error sending packet to decoder: %d", ret);
 		return false;
 	}
 
@@ -130,7 +133,7 @@ bool video_decoder_decode(struct video_decoder *decoder, uint8_t *data,
 	if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
 		return true; // Need more data
 	} else if (ret < 0) {
-		blog(LOG_ERROR, "Error receiving frame from decoder: %d", ret);
+		mlog(LOG_ERROR, "Error receiving frame from decoder: %d", ret);
 		return false;
 	}
 
@@ -142,7 +145,7 @@ bool video_decoder_decode(struct video_decoder *decoder, uint8_t *data,
 			decoder->width, decoder->height, AV_PIX_FMT_RGBA,
 			SWS_BILINEAR, NULL, NULL, NULL);
 		if (!sws_ctx) {
-			blog(LOG_ERROR, "Failed to create swscale context");
+			mlog(LOG_ERROR, "Failed to create swscale context");
 			return false;
 		}
 		decoder->sws_ctx = sws_ctx;

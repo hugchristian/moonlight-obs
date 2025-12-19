@@ -6,7 +6,7 @@
 #define PLUGIN_NAME "moonlight-obs"
 #define PLUGIN_VERSION "1.0.0"
 
-#define blog(log_level, format, ...) \
+#define mlog(log_level, format, ...) \
 	blog(log_level, "[" PLUGIN_NAME "] " format, ##__VA_ARGS__)
 
 // Forward declarations

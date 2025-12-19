@@ -7,6 +7,10 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <time.h>
+
+// Placeholder sleep duration in nanoseconds (approximately 60 FPS)
+#define PLACEHOLDER_FRAME_INTERVAL_NS 16666666
 
 // Private data structure for client implementation
 struct client_priv {
@@ -21,7 +25,7 @@ static void *streaming_thread(void *arg)
 	struct moonlight_client *client = arg;
 	struct client_priv *priv = client->priv;
 
-	blog(LOG_INFO, "Streaming thread started for %s:%d", client->host,
+	mlog(LOG_INFO, "Streaming thread started for %s:%d", client->host,
 	     client->port);
 
 	// In a real implementation, this would:
@@ -47,10 +51,15 @@ static void *streaming_thread(void *arg)
 		// - Calling moonlight_client_video_frame() with video data
 		// - Calling moonlight_client_audio_frame() with audio data
 
-		usleep(16666); // ~60 FPS placeholder
+		// Placeholder sleep for ~60 FPS frame interval
+		struct timespec ts = {
+			.tv_sec = 0,
+			.tv_nsec = PLACEHOLDER_FRAME_INTERVAL_NS
+		};
+		nanosleep(&ts, NULL);
 	}
 
-	blog(LOG_INFO, "Streaming thread stopped");
+	mlog(LOG_INFO, "Streaming thread stopped");
 	return NULL;
 }
 
@@ -76,7 +85,7 @@ struct moonlight_client *moonlight_client_create(struct moonlight_source *source
 	priv->should_stop = false;
 	client->priv = priv;
 
-	blog(LOG_INFO, "Moonlight client created");
+	mlog(LOG_INFO, "Moonlight client created");
 	return client;
 }
 
@@ -85,7 +94,7 @@ void moonlight_client_destroy(struct moonlight_client *client)
 	if (!client)
 		return;
 
-	blog(LOG_INFO, "Destroying Moonlight client");
+	mlog(LOG_INFO, "Destroying Moonlight client");
 
 	// Stop streaming if active
 	if (client->streaming) {
@@ -113,7 +122,7 @@ bool moonlight_client_start(struct moonlight_client *client, const char *host,
 
 	struct client_priv *priv = client->priv;
 
-	blog(LOG_INFO, "Starting Moonlight client: %s:%d (app: %s)", host, port,
+	mlog(LOG_INFO, "Starting Moonlight client: %s:%d (app: %s)", host, port,
 	     app_name);
 
 	// Store connection parameters
@@ -131,7 +140,7 @@ bool moonlight_client_start(struct moonlight_client *client, const char *host,
 	// Start streaming thread
 	priv->should_stop = false;
 	if (pthread_create(&priv->thread, NULL, streaming_thread, client) != 0) {
-		blog(LOG_ERROR, "Failed to create streaming thread");
+		mlog(LOG_ERROR, "Failed to create streaming thread");
 		free(client->host);
 		free(client->app_name);
 		client->host = NULL;
@@ -142,7 +151,7 @@ bool moonlight_client_start(struct moonlight_client *client, const char *host,
 	client->streaming = true;
 	client->connected = true;
 
-	blog(LOG_INFO, "Moonlight client started successfully");
+	mlog(LOG_INFO, "Moonlight client started successfully");
 	return true;
 }
 
@@ -151,7 +160,7 @@ void moonlight_client_stop(struct moonlight_client *client)
 	if (!client || !client->streaming)
 		return;
 
-	blog(LOG_INFO, "Stopping Moonlight client");
+	mlog(LOG_INFO, "Stopping Moonlight client");
 
 	struct client_priv *priv = client->priv;
 
@@ -166,7 +175,7 @@ void moonlight_client_stop(struct moonlight_client *client)
 	client->streaming = false;
 	client->connected = false;
 
-	blog(LOG_INFO, "Moonlight client stopped");
+	mlog(LOG_INFO, "Moonlight client stopped");
 }
 
 void moonlight_client_video_frame(struct moonlight_client *client,
