@@ -41,7 +41,8 @@ jobs:
     - name: Run tests
       run: |
         cd build
-        ctest --output-on-failure || echo "Tests completed"
+        ctest --output-on-failure
+      continue-on-error: true
     
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v4
@@ -60,7 +61,8 @@ jobs:
         brew install cmake
         brew install ffmpeg
         # OBS Studio needs to be installed from cask or built
-        brew install --cask obs || echo "OBS not available via cask, continuing..."
+        brew install --cask obs
+      continue-on-error: true
     
     - name: Configure CMake
       run: |

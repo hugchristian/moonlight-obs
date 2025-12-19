@@ -46,7 +46,7 @@ jobs:
       run: |
         brew install cmake
         brew install ffmpeg
-        brew install --cask obs || echo "OBS not available via cask"
+        brew install --cask obs
       continue-on-error: true
     
     - name: Setup MSVC (Windows)
@@ -86,28 +86,34 @@ jobs:
     - name: Package plugin (Linux/macOS)
       if: matrix.platform != 'windows'
       run: |
+        if [ ! -f "build/${{ matrix.artifact_name }}" ]; then
+          echo "Build artifact not found, skipping packaging"
+          exit 1
+        fi
         mkdir -p release/obs-plugins
         mkdir -p release/data/obs-plugins/moonlight-obs
-        if [ -f "build/${{ matrix.artifact_name }}" ]; then
-          cp build/${{ matrix.artifact_name }} release/obs-plugins/
+        cp build/${{ matrix.artifact_name }} release/obs-plugins/
+        if [ -d "data" ]; then
           cp -r data/* release/data/obs-plugins/moonlight-obs/ 2>/dev/null || true
-          cd release
-          tar -czf ../${{ matrix.asset_name }}.tar.gz *
         fi
+        cd release
+        tar -czf ../${{ matrix.asset_name }}.tar.gz *
       continue-on-error: true
     
     - name: Package plugin (Windows)
       if: matrix.platform == 'windows'
       run: |
-        mkdir release\obs-plugins\64bit
-        mkdir release\data\obs-plugins\moonlight-obs
-        if (Test-Path "build\Release\${{ matrix.artifact_name }}") {
-          Copy-Item "build\Release\${{ matrix.artifact_name }}" "release\obs-plugins\64bit\"
-          if (Test-Path "data\*") {
-            Copy-Item "data\*" "release\data\obs-plugins\moonlight-obs\" -Recurse -Force
-          }
-          Compress-Archive -Path "release\*" -DestinationPath "${{ matrix.asset_name }}.zip"
+        if (-not (Test-Path "build\Release\${{ matrix.artifact_name }}")) {
+          Write-Host "Build artifact not found, skipping packaging"
+          exit 1
         }
+        mkdir release\obs-plugins\64bit -Force
+        mkdir release\data\obs-plugins\moonlight-obs -Force
+        Copy-Item "build\Release\${{ matrix.artifact_name }}" "release\obs-plugins\64bit\"
+        if (Test-Path "data\*") {
+          Copy-Item "data\*" "release\data\obs-plugins\moonlight-obs\" -Recurse -Force
+        }
+        Compress-Archive -Path "release\*" -DestinationPath "${{ matrix.asset_name }}.zip"
       continue-on-error: true
     
     - name: Upload Release Asset

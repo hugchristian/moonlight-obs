@@ -22,7 +22,7 @@ jobs:
       run: |
         find src -name "*.c" -o -name "*.h" | while read file; do
           echo "Checking $file"
-          clang-format --dry-run --Werror "$file" || echo "Format check completed for $file"
+          clang-format --dry-run --Werror "$file"
         done
       continue-on-error: true
 
